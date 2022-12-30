@@ -1,12 +1,35 @@
 {% extends 'base.html' %}
 
-{% block title %} Edit CafeName {% endblock %}
+{% block title %} Edit {{ cafe.name }} {% endblock %}
 
 {% block content %}
 
-<h1 class="mb-4">Edit CafeName </h1>
+<h1 class="mb-4">Edit {{ cafe.name }} </h1>
 
-<!-- form goes here -->>
-{% include '_form.html' %}
+<!-- form goes here -->
+{# include '_form.html' #}
+<!-- ^Wasnt there something doable with this? -->
+
+<form id="edit-cafe-form" method="POST">
+  {{ form.hidden_tag() }} <!--add type=hidden form fields -->
+
+  {% for field in form
+         if field.widget.input_type != 'hidden' %}
+
+    <p>
+      {{ field.label }}
+      {{ field }}
+
+      {% for error in field.errors %}
+        {{ error }}
+      {% endfor %}
+    </p>
+
+  {% endfor %}
+
+  <button type="submit">Update</button>
+  <button type="submit" formmethod="GET" formaction="/">Home</button>
+</form>
+
 
 {% endblock %}

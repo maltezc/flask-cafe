@@ -7,5 +7,26 @@
 <h1 class="mb-4">Add Cafe</h1>
 
 <!-- form goes here -->
+<!-- <h1>TODO: FORM GOES HERE</h1> -->
+<form id="add-edit-cafe-form" method="POST">
+  {{ form.hidden_tag() }} <!--add type=hidden form fields -->
+
+  {% for field in form
+         if field.widget.input_type != 'hidden' %}
+
+    <p>
+      {{ field.label }}
+      {{ field }}
+
+      {% for error in field.errors %}
+        {{ error }}
+      {% endfor %}
+    </p>
+
+  {% endfor %}
+
+  <button type="submit">Add</button>
+  <button type="submit" formmethod="GET" formaction="/">Home</button>
+</form>
 
 {% endblock %}

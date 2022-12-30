@@ -10,6 +10,18 @@
     <h1 class="mb-4">Sign Up!</h1>
 
     <!-- form goes here -->
+    <form method="POST" id="user_form">
+      {{ form.hidden_tag() }}
+
+      {% for field in form if field.widget.input_type != 'hidden' %}
+        {% for error in field.errors %}
+          <span class="text-danger">{{ error }}</span>
+        {% endfor %}
+        {{ field(placeholder=field.label.text, class="form-control") }}
+      {% endfor %}
+
+      <button class="btn btn-primary btn-lg">Sign me up!</button>
+    </form>
 
   </div>
 </div>
