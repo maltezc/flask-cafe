@@ -111,7 +111,7 @@ class User(db.Model):
     username = db.Column(
         db.Text,
         nullable=False,
-        unique=True,
+        # unique=True,
     )
 
     #TODO: ADMIN
@@ -124,7 +124,7 @@ class User(db.Model):
     email = db.Column(
         db.Text,
         nullable=False,
-        unique=True,
+        # unique=True,
     )
 
     #first name
@@ -146,8 +146,6 @@ class User(db.Model):
         db.Text,
         default=DEFAULT_USER_IMAGE_URL,
     )
-
-    # hashed_password
 
     password = db.Column(
         db.Text,

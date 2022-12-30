@@ -4,8 +4,8 @@
 # import re
 from unittest import TestCase
 
-# from flask import session
-from app import app  # , CURR_USER_KEY
+from flask import session
+from app import app, CURR_USER_KEY
 from models import db, Cafe, City, connect_db, User #, Like
 import re
 from helpers import get_choices_vocab
@@ -41,11 +41,11 @@ def debug_html(response, label="DEBUGGING"):  # pragma: no cover
     print("\n\n")
 
 
-# def login_for_test(client, user_id):
-#     """Log in this user."""
+def login_for_test(client, user_id):
+    """Log in this user."""
 
-#     with client.session_transaction() as sess:
-#         sess[CURR_USER_KEY] = user_id
+    with client.session_transaction() as sess:
+        sess[CURR_USER_KEY] = user_id
 
 
 #######################################
@@ -365,112 +365,116 @@ class UserModelTestCase(TestCase):
         db.session.rollback()
 
 
-# class AuthViewsTestCase(TestCase):
-#     """Tests for views on logging in/logging out/registration."""
+class AuthViewsTestCase(TestCase):
+    """Tests for views on logging in/logging out/registration."""
 
-#     def setUp(self):
-#         """Before each test, add sample users."""
+    def setUp(self):
+        """Before each test, add sample users."""
 
-#         User.query.delete()
+        User.query.delete()
 
-#         user = User.register(**TEST_USER_DATA)
-#         db.session.add(user)
+        user = User.register(**TEST_USER_DATA)
+        # user = User.register(**TEST_USER_DATA)
+        db.session.add(user)
 
-#         db.session.commit()
+        db.session.commit()
 
-#         self.user_id = user.id
+        self.user_id = user.id
 
-#     def tearDown(self):
-#         """After each test, remove all users."""
+    def tearDown(self):
+        """After each test, remove all users."""
 
-#         User.query.delete()
-#         db.session.commit()
+        User.query.delete()
+        db.session.commit()
 
-#     def test_signup(self):
-#         with app.test_client() as client:
-#             resp = client.get("/signup")
-#             self.assertIn(b'Sign Up', resp.data)
+    def test_signup(self):
+        with app.test_client() as client:
+            resp = client.get("/signup")
+            self.assertIn(b'Sign Up', resp.data)
 
-#             resp = client.post(
-#                 "/signup",
-#                 data=TEST_USER_DATA_NEW,
-#                 follow_redirects=True,
-#             )
+            resp = client.post(
+                "/signup",
+                data=TEST_USER_DATA_NEW,
+                follow_redirects=True,
+            )
 
-#             self.assertIn(b"You are signed up and logged in.", resp.data)
-#             self.assertTrue(session.get(CURR_USER_KEY))
+            self.assertIn(b"You are signed up and logged in.", resp.data)
+            self.assertTrue(session.get(CURR_USER_KEY))
 
-#     def test_signup_username_taken(self):
-#         with app.test_client() as client:
-#             resp = client.get("/signup")
-#             self.assertIn(b'Sign Up', resp.data)
+    # FIXME: THIS TEST IS FAILING. TEST_USER_DATA IS NOT COMMITTED FOR SOME REASON AND PAGE SKIPS TO HOME PAGE. TRY/EXCEPT COULD BE CULPRIT
+    def test_signup_username_taken(self):
+        with app.test_client() as client:
+            resp = client.get("/signup")
+            self.assertIn(b'Sign Up', resp.data)
 
-#             # signup with same data as the already-added user
-#             resp = client.post(
-#                 "/signup",
-#                 data=TEST_USER_DATA,
-#                 follow_redirects=True,
-#             )
+            # signup with same data as the already-added user
+            resp = client.post(
+                "/signup",
+                data=TEST_USER_DATA,
+                follow_redirects=True,
+            )
+            breakpoint()
+            self.assertIn(b"Username already taken", resp.data)
 
-#             self.assertIn(b"Username already taken", resp.data)
+    def test_login(self):
+        with app.test_client() as client:
+            resp = client.get("/login")
+            self.assertIn(b'Welcome Back!', resp.data)
 
-#     def test_login(self):
-#         with app.test_client() as client:
-#             resp = client.get("/login")
-#             self.assertIn(b'Welcome Back!', resp.data)
+            resp = client.post(
+                "/login",
+                data={"username": "test", "password": "WRONG"},
+                follow_redirects=True,
+            )
 
-#             resp = client.post(
-#                 "/login",
-#                 data={"username": "test", "password": "WRONG"},
-#                 follow_redirects=True,
-#             )
+            self.assertIn(b"Invalid credentials", resp.data)
 
-#             self.assertIn(b"Invalid credentials", resp.data)
+            resp = client.post(
+                "/login",
+                data={"username": "test", "password": "secret"},
+                follow_redirects=True,
+            )
 
-#             resp = client.post(
-#                 "/login",
-#                 data={"username": "test", "password": "secret"},
-#                 follow_redirects=True,
-#             )
+            self.assertIn(b"Hello, test", resp.data)
+            self.assertEqual(session.get(CURR_USER_KEY), self.user_id)
 
-#             self.assertIn(b"Hello, test", resp.data)
-#             self.assertEqual(session.get(CURR_USER_KEY), self.user_id)
+    def test_logout(self):
+        with app.test_client() as client:
+            login_for_test(client, self.user_id)
+            resp = client.post("/logout", follow_redirects=True)
 
-#     def test_logout(self):
-#         with app.test_client() as client:
-#             login_for_test(client, self.user_id)
-#             resp = client.post("/logout", follow_redirects=True)
-
-#             self.assertIn(b"successfully logged out", resp.data)
-#             self.assertEqual(session.get(CURR_USER_KEY), None)
+            self.assertIn(b"successfully logged out", resp.data)
+            self.assertEqual(session.get(CURR_USER_KEY), None)
 
 
-# class NavBarTestCase(TestCase):
-#     """Tests navigation bar."""
+class NavBarTestCase(TestCase):
+    """Tests navigation bar."""
 
-#     def setUp(self):
-#         """Before tests, add sample user."""
+    def setUp(self):
+        """Before tests, add sample user."""
 
-#         User.query.delete()
+        User.query.delete()
 
-#         user = User.register(**TEST_USER_DATA)
+        user = User.register(**TEST_USER_DATA)
 
-#         db.session.add_all([user])
-#         db.session.commit()
+        db.session.add_all([user])
+        db.session.commit()
 
-#         self.user_id = user.id
+        self.user_id = user.id
 
-#     def tearDown(self):
-#         """After tests, remove all users."""
+    def tearDown(self):
+        """After tests, remove all users."""
 
-#         User.query.delete()
-#         db.session.commit()
+        User.query.delete()
+        db.session.commit()
 
-#     def test_anon_navbar(self):
-#         self.fail("FIXME: write this test")
+    def test_anon_navbar(self):
+        self.fail("FIXME: write this test")
+        # TODO: CHECK FOR LOGOUT NOT SHOWING
 
-#     def test_logged_in_navbar(self):
-#         self.fail("FIXME: write this test")
+    def test_logged_in_navbar(self):
+        self.fail("FIXME: write this test")
+        # TODO: CHECK FOR LOGOUT SHOWING
 
 
 # class ProfileViewsTestCase(TestCase):

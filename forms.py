@@ -32,7 +32,9 @@ class UserAddForm(FlaskForm):
     # email: required and must be an email address
     email = EmailField('E-mail', validators=[InputRequired(), Email()])
     # password: required, and must be length >= 6
-    password = PasswordField('Password', validators=[Length(min=6)])
+    password = PasswordField('Password', validators=[InputRequired()])
+    # password = PasswordField('Password', validators=[Length(min=6)])
+    # password = PasswordField('Password', validators=[Length(min=5)])
     # image_url: can be left blank, otherwise must be a valid URL
     image_url = StringField('(Optional) Image URL')
 
@@ -40,5 +42,6 @@ class LoginForm(FlaskForm):
     """Login form."""
 
     username = StringField('Username', validators=[InputRequired()])
-    password = PasswordField('Password', validators=[Length(min=6)])
+    password = PasswordField('Password', validators=[InputRequired()])
+    # password = PasswordField('Password', validators=[Length(min=6)])
 
