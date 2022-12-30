@@ -6,7 +6,7 @@ from unittest import TestCase
 
 # from flask import session
 from app import app  # , CURR_USER_KEY
-from models import db, Cafe, City, connect_db  # , User, Like
+from models import db, Cafe, City, connect_db, User #, Like
 import re
 from helpers import get_choices_vocab
 
@@ -76,42 +76,42 @@ CAFE_DATA_EDIT = dict(
     image_url="http://new-image.com/"
 )
 
-# TEST_USER_DATA = dict(
-#     username="test",
-#     first_name="Testy",
-#     last_name="MacTest",
-#     description="Test Description.",
-#     email="test@test.com",
-#     password="secret",
-# )
+TEST_USER_DATA = dict(
+    username="test",
+    first_name="Testy",
+    last_name="MacTest",
+    description="Test Description.",
+    email="test@test.com",
+    password="secret",
+)
 
-# TEST_USER_DATA_EDIT = dict(
-#     first_name="new-fn",
-#     last_name="new-ln",
-#     description="new-description",
-#     email="new-email@test.com",
-#     image_url="http://new-image.com",
-# )
+TEST_USER_DATA_EDIT = dict(
+    first_name="new-fn",
+    last_name="new-ln",
+    description="new-description",
+    email="new-email@test.com",
+    image_url="http://new-image.com",
+)
 
-# TEST_USER_DATA_NEW = dict(
-#     username="new-username",
-#     first_name="new-fn",
-#     last_name="new-ln",
-#     description="new-description",
-#     password="secret",
-#     email="new-email@test.com",
-#     image_url="http://new-image.com",
-# )
+TEST_USER_DATA_NEW = dict(
+    username="new-username",
+    first_name="new-fn",
+    last_name="new-ln",
+    description="new-description",
+    password="secret",
+    email="new-email@test.com",
+    image_url="http://new-image.com",
+)
 
-# ADMIN_USER_DATA = dict(
-#     username="admin",
-#     first_name="Addie",
-#     last_name="MacAdmin",
-#     description="Admin Description.",
-#     email="admin@test.com",
-#     password="secret",
-#     admin=True,
-# )
+ADMIN_USER_DATA = dict(
+    username="admin",
+    first_name="Addie",
+    last_name="MacAdmin",
+    description="Admin Description.",
+    email="admin@test.com",
+    password="secret",
+    admin=True,
+)
 
 
 #######################################
@@ -264,6 +264,7 @@ class CafeAdminViewsTestCase(TestCase):
         db.session.commit()
 
     def test_add(self):
+        """Tests adding a cafe"""
         with app.test_client() as client:
             resp = client.get(f"/cafes/add")
             self.assertIn(b'Add Cafe', resp.data)
@@ -275,6 +276,7 @@ class CafeAdminViewsTestCase(TestCase):
             self.assertIn(b'added', resp.data)
 
     def test_dynamic_cities_vocab(self):
+        """tests for dynamically added values"""
         id = self.cafe_id
 
         # the following is a regular expression for the HTML for the drop-down
@@ -291,6 +293,7 @@ class CafeAdminViewsTestCase(TestCase):
             self.assertRegex(resp.data.decode('utf8'), choices_pattern)
 
     def test_edit(self):
+        """tests when editing a cafe"""
         id = self.cafe_id
 
         with app.test_client() as client:
@@ -304,80 +307,62 @@ class CafeAdminViewsTestCase(TestCase):
             self.assertIn(b'edited', resp.data)
 
     def test_edit_form_shows_curr_data(self):
+        """tests editing description of cafe"""
         id = self.cafe_id
 
         with app.test_client() as client:
             resp = client.get(f"/cafes/{id}/edit", follow_redirects=True)
             self.assertIn(b'Test description', resp.data)
 
-    # TODO: create test for selections somehow.
-    # no clue how this is going to work
     def test_get_choices_vocab(self):
+        """test vocab choices function"""
         self.assertIn(('sf', 'San Francisco'), get_choices_vocab())
-        # self.assertIn("San Francisco", get_choices_vocab())
-        # self.assertIn(get_choices_vocab(), "Berkeley")
-
-
-        # id = self.cafe_id
-
-        # with app.test_client() as client:
-        #     resp = client.get(f"/cafes/add", follow_redirects=True)
-        #     # resp = client.get(f"/cafes/{id}", follow_redirects=True)
-        #     breakpoint()
-        #     self.assertIn(b'Test description', resp.data)
-
-        # /cafes/<int:cafe_id>
-        # return all choices for city codes.
-
-        # go to page.
-
-        # check html potentially to see fif it pops up.
 
 
 #######################################
 # users
 
 
-# class UserModelTestCase(TestCase):
-#     """Tests for the user model."""
+class UserModelTestCase(TestCase):
+    """Tests for the user model."""
 
-#     def setUp(self):
-#         """Before each test, add sample users."""
+    def setUp(self):
+        """Before each test, add sample users."""
 
-#         User.query.delete()
+        User.query.delete()
 
-#         user = User.register(**TEST_USER_DATA)
-#         db.session.add(user)
+        user = User.register(**TEST_USER_DATA)
+        db.session.add(user)
 
-#         db.session.commit()
+        db.session.commit()
 
-#         self.user = user
+        self.user = user
 
-#     def tearDown(self):
-#         """After each test, remove all users."""
+    def tearDown(self):
+        """After each test, remove all users."""
 
-#         User.query.delete()
-#         db.session.commit()
+        User.query.delete()
+        db.session.commit()
 
-#     def test_authenticate(self):
-#         rez = User.authenticate("test", "secret")
-#         self.assertEqual(rez, self.user)
+    def test_authenticate(self):
+        rez = User.authenticate("test", "secret")
+        self.assertEqual(rez, self.user)
 
-#     def test_authenticate_fail(self):
-#         rez = User.authenticate("no-such-user", "secret")
-#         self.assertFalse(rez)
+    def test_authenticate_fail(self):
+        rez = User.authenticate("no-such-user", "secret")
+        self.assertFalse(rez)
 
-#         rez = User.authenticate("test", "password")
-#         self.assertFalse(rez)
+        rez = User.authenticate("test", "password")
+        self.assertFalse(rez)
 
-#     def test_full_name(self):
-#         self.assertEqual(self.user.get_full_name(), "Testy MacTest")
+    def test_full_name(self):
+        self.assertEqual(self.user.get_full_name(), "Testy MacTest")
 
-#     def test_register(self):
-#         u = User.register(**TEST_USER_DATA)
-#         # test that password gets bcrypt-hashed (all start w/$2b$)
-#         self.assertEqual(u.hashed_password[:4], "$2b$")
-#         db.session.rollback()
+    def test_register(self):
+        u = User.register(**TEST_USER_DATA)
+        # test that password gets bcrypt-hashed (all start w/$2b$)
+        self.assertEqual(u.hashed_password[:4], "$2b$")
+        db.session.rollback()
 
 
 # class AuthViewsTestCase(TestCase):
