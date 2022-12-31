@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.first_name }} {{user.last_name}}{% endblock%}
+
+{% block content %}
+
+<div
+  id="warbler-hero"
+  class="full-width"
+  style="background-image: url('{{ user.header_image_url }}')"
+></div>
+
+<div class="row full-width">
+  <div class="container" style="max-width: 1300px">
+    <div class="row justify-content-end">
+      <div class="col-9">
+        <ul class="user-stats nav nav-pills">
+          <li class="ms-auto">
+            {% if g.user.id == user.id %}
+            <img
+              src="{{ user.image_url }}"
+              alt="Image for {{ user.username }}"
+              id="profile-avatar"
+            />
+            <div>
+              <h4>Name: {{ g.user.first_name }} {{ g.user.last_name }}</h4>
+            </div>
+            <div>
+              <p>Description: {{ g.user.description }}</p>
+            </div>
+            <div>
+              <p>Username: {{ g.user.username }}</p>
+            </div>
+            <div>
+              <p>{{ g.user.email }}</p>
+            </div>
+
+            <a href="/profile/edit" class="btn btn-outline-secondary">
+              Edit Profile
+            </a>
+            {% endif %}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -5,8 +5,8 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 import os
 
-from models import db, connect_db, Cafe, City, User
-from forms import CafeAddUpdateForm, UserAddForm, LoginForm, CSRFProtection
+from models import db, connect_db, Cafe, City, User, DEFAULT_USER_IMAGE_URL
+from forms import CafeAddUpdateForm, UserAddForm, LoginForm, CSRFProtection, ProfileEditForm
 from helpers import get_choices_vocab
 
 
@@ -22,7 +22,7 @@ toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
-#######################################
+######################################################################################
 # auth & auth routes
 
 CURR_USER_KEY = "curr_user"
@@ -148,8 +148,57 @@ def logout():
     flash("You have successfully logged out.", 'success')
     return redirect("/login")
 
+##############################################################################################
+# User page routes
 
-#######################################
+# GET /profile
+    # Show profile page.
+@app.get('/profile')
+def user_detail_page():
+    """Shows user's profile page"""
+
+    if not g.user:
+        flash("Access unauthorized. NOT_LOGGED_IN", "danger")
+        return redirect("/login")
+
+    user = g.user
+    # user = User.query.get_or_404(g.user.id)
+
+    return render_template("/users/detail.html", user=user)
+
+
+# GET /profile/edit
+    # Show profile edit form.
+# POST /profile/edit
+    # Process profile edit. On success, this should redirect to the profile page with the flashed message “Profile edited.”
+@app.route('/profile/edit', methods=["GET", "POST"])
+def edit_profile():
+    """Form editing a user's profile page"""
+
+    if not g.user:
+        flash("Access unauthorized. NOT_LOGGED_IN", "danger")
+        return redirect("/login")
+
+    user = g.user
+    form = ProfileEditForm(obj=user)
+
+    if form.validate_on_submit():
+        user.email = form.email.data
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.description = form.description.data
+        user.image_url = form.image_url.data or DEFAULT_USER_IMAGE_URL
+
+        db.session.commit()
+        flash("Profile edited.", "success")
+        return redirect(f"/profile")
+
+
+    return render_template('users/edit.html', form=form, user=user)
+
+
+
+######################################################################################
 # homepage
 
 @app.get("/")
@@ -159,7 +208,7 @@ def homepage():
     return render_template("homepage.html")
 
 
-#######################################
+##############################################################################################
 # cafes
 
 

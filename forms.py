@@ -21,21 +21,12 @@ class CSRFProtection(FlaskForm):
 class UserAddForm(FlaskForm):
     """Form for adding users."""
 
-    # username: required
     username = StringField('Username', validators=[InputRequired()])
-    # first_name: required
     first_name = StringField("First Name", validators=[InputRequired()])
-    # last_name: required
     last_name = StringField("Last Name", validators=[InputRequired()])
-    # description: larger text area, optional
     description = TextAreaField("Description", validators=[InputRequired()])
-    # email: required and must be an email address
     email = EmailField('E-mail', validators=[InputRequired(), Email()])
-    # password: required, and must be length >= 6
     password = PasswordField('Password', validators=[InputRequired()])
-    # password = PasswordField('Password', validators=[Length(min=6)])
-    # password = PasswordField('Password', validators=[Length(min=5)])
-    # image_url: can be left blank, otherwise must be a valid URL
     image_url = StringField('(Optional) Image URL')
 
 class LoginForm(FlaskForm):
@@ -43,5 +34,11 @@ class LoginForm(FlaskForm):
 
     username = StringField('Username', validators=[InputRequired()])
     password = PasswordField('Password', validators=[InputRequired()])
-    # password = PasswordField('Password', validators=[Length(min=6)])
+
+class ProfileEditForm(FlaskForm):
+    first_name = StringField("First Name", validators=[InputRequired()])
+    last_name = StringField("Last Name", validators=[InputRequired()])
+    description = TextAreaField("Description", validators=[InputRequired()])
+    email = EmailField('E-mail', validators=[InputRequired(), Email()])
+    image_url = StringField('(Optional) Image URL')
 

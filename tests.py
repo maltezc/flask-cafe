@@ -1,5 +1,6 @@
 """Tests for Flask Cafe."""
 
+# NOTE: HOW TO CHECK FOR redirect PATH: "response.request.path"
 
 # import re
 from unittest import TestCase
@@ -9,6 +10,9 @@ from app import app, CURR_USER_KEY
 from models import db, Cafe, City, connect_db, User #, Like
 import re
 from helpers import get_choices_vocab
+
+# app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 
 # Use test database and don't clutter tests with SQL
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql:///flaskcafe_test"
@@ -483,41 +487,86 @@ class NavBarTestCase(TestCase):
                 follow_redirects=True,
             )
 
+            self.assertEqual(session.get(CURR_USER_KEY), self.user_id)
             self.assertIn(b"Log Out", resp.data)
 
 
-# class ProfileViewsTestCase(TestCase):
-#     """Tests for views on user profiles."""
+class ProfileViewsTestCase(TestCase):
+    """Tests for views on user profiles."""
 
-#     def setUp(self):
-#         """Before each test, add sample user."""
+    def setUp(self):
+        """Before each test, add sample user."""
 
-#         User.query.delete()
+        User.query.delete()
 
-#         user = User.register(**TEST_USER_DATA)
-#         db.session.add(user)
+        user = User.register(**TEST_USER_DATA)
+        db.session.add(user)
 
-#         db.session.commit()
+        db.session.commit()
 
-#         self.user_id = user.id
+        self.user_id = user.id
+        self.user = user
 
-#     def tearDown(self):
-#         """After each test, remove all users."""
+    def tearDown(self):
+        """After each test, remove all users."""
 
-#         User.query.delete()
-#         db.session.commit()
+        User.query.delete()
+        db.session.commit()
 
-#     def test_anon_profile(self):
-#         self.fail("FIXME: write this test")
+    def test_anon_profile(self):
+        with app.test_client() as client:
+            resp = client.get("/profile",
+            follow_redirects=True)
+            self.assertIn(b"Access unauthorized. NOT_LOGGED_IN", resp.data)
 
-#     def test_logged_in_profile(self):
-#         self.fail("FIXME: write this test")
+    def test_logged_in_profile(self):
+        with app.test_client() as client:
+            resp = client.get("/login")
 
-#     def test_anon_profile_edit(self):
-#         self.fail("FIXME: write this test")
+            resp = client.post(
+                "/login",
+                data={"username": "test", "password": "secret"},
+                follow_redirects=True,
+            )
 
-#     def test_logged_in_profile_edit(self):
-#         self.fail("FIXME: write this test")
+            resp = client.get("/profile")
+
+            self.assertEqual(session.get(CURR_USER_KEY), self.user_id)
+            self.assertIn(b"Log Out", resp.data)
+
+            self.assertIn(b"Testy", resp.data)
+            self.assertIn(b"MacTest", resp.data)
+
+
+    def test_anon_profile_edit(self):
+        with app.test_client() as client:
+            resp = client.get("/profile/edit",
+            follow_redirects=True)
+            self.assertIn(b"Access unauthorized. NOT_LOGGED_IN", resp.data)
+
+
+    def test_logged_in_profile_edit(self):
+        with app.test_client() as client:
+            resp = client.get("/login")
+
+            resp = client.post(
+                "/login",
+                data={"username": "test", "password": "secret"},
+                follow_redirects=True,
+            )
+
+            resp = client.get("/profile/edit")
+            breakpoint()
+
+            resp = client.post(
+                "/profile/edit",
+                data={"first_name": "TestyEdited"},
+                follow_redirects=True,
+            )
+            breakpoint()
+            self.assertIn(b"TestyEdited", resp.data)
+        # CHECK FOR NAME CHANGE.
+        # self.fail("FIXME: write this test")
 
 
 #######################################
