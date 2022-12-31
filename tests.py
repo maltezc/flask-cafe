@@ -469,12 +469,21 @@ class NavBarTestCase(TestCase):
         db.session.commit()
 
     def test_anon_navbar(self):
-        self.fail("FIXME: write this test")
-        # TODO: CHECK FOR LOGOUT NOT SHOWING
+        with app.test_client() as client:
+            resp = client.get("/login")
+            self.assertNotIn(b"Log Out", resp.data)
 
     def test_logged_in_navbar(self):
-        self.fail("FIXME: write this test")
-        # TODO: CHECK FOR LOGOUT SHOWING
+        with app.test_client() as client:
+            resp = client.get("/login")
+
+            resp = client.post(
+                "/login",
+                data={"username": "test", "password": "secret"},
+                follow_redirects=True,
+            )
+
+            self.assertIn(b"Log Out", resp.data)
 
 
 # class ProfileViewsTestCase(TestCase):
