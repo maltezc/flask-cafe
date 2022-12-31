@@ -11,6 +11,43 @@ db = SQLAlchemy()
 DEFAULT_USER_IMAGE_URL = "/static/images/default-pic.png"
 DEFAULT_CAFE_IMAGE_URL = "/static/images/default-cafe.jpg"
 
+# class Follows(db.Model):
+#     """Connection of a follower <-> followed_user."""
+
+#     __tablename__ = 'follows'
+
+#     cafe_being_followed_id = db.Column(
+#         db.Integer,
+#         db.ForeignKey('users.id', ondelete="cascade"),
+#         primary_key=True,
+#     )
+
+#     cafe_following_id = db.Column(
+#         db.Integer,
+#         db.ForeignKey('users.id', ondelete="cascade"),
+#         primary_key=True,
+#     )
+
+class Like(db.Model):
+    """Join table between users and cafes (the join represents a like)."""
+
+    __tablename__ = 'likes'
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=False,
+        primary_key=True,
+    )
+
+    cafe_id = db.Column(
+        db.Integer,
+        db.ForeignKey('cafes.id', ondelete='CASCADE'),
+        nullable=False,
+        primary_key=True,
+    )
+
+
 class City(db.Model):
     """Cities for cafes."""
 
@@ -76,6 +113,10 @@ class Cafe(db.Model):
 
     city = db.relationship("City", backref='cafes')
 
+    liking_users = db.relationship("User", secondary="likes")
+
+
+
     def __repr__(self):
         return f'<Cafe id={self.id} name="{self.name}">'
 
@@ -84,6 +125,14 @@ class Cafe(db.Model):
 
         city = self.city
         return f'{city.name}, {city.state}'
+
+
+    # `def is_liked_by(self, user):
+    #     """Is this user followed by `other_user`?"""
+
+    #     found_user_list = [
+    #         user for user in Like.cafe_id if cafe_id == id]
+    #     return len(found_user_list) == 1`
 
 
 def connect_db(app):
@@ -127,17 +176,14 @@ class User(db.Model):
         # unique=True,
     )
 
-    #first name
     first_name = db.Column(
         db.String(100),
         nullable=False)
 
-    #last name
     last_name = db.Column(
         db.String(100),
         nullable=False)
 
-    #description
     description = db.Column(
         db.String(100),
         nullable=False)
@@ -151,6 +197,44 @@ class User(db.Model):
         db.Text,
         nullable=False,
     )
+
+    # reference: https://stackoverflow.com/questions/19598578/how-do-primaryjoin-and-secondaryjoin-work-for-many-to-many-relationship-in-s
+    # liked_cafes = db.relationship(
+    #     "Cafe",
+    #     secondary="likes",
+    #     primaryjoin=(Like.user_id == id),
+    #     # primaryjoin=(Follows.cafe_being_followed_id == Cafe.id),
+    #     secondaryjoin=(Like.cafe_id == Cafe.id),
+    #     backref="liking_users",
+    # )
+    liked_cafes = db.relationship('Cafe', secondary="likes")
+
+
+    # def like_cafe(self, cafe):
+    #     if not self.currently_likes(cafe):
+    #         self.liked_cafes.append(cafe)
+    #         return self
+
+    # def unlike_cafe(self, cafe):
+    #     if self.currently_likes(cafe):
+    #         self.liked_cafes.remove(cafe)
+    #         return self
+
+    # def is_followed_by(self, other_user):
+    #     """Is this user followed by `other_user`?"""
+
+    #     found_user_list = [
+    #         user for user in self.followers if user == other_user]
+    #     return len(found_user_list) == 1
+
+    def currently_likes(self, cafe):
+        """does this user currently like the cafe?"""
+
+        found_liked_cafes = [
+            cafe for cafe in self.liking_users if cafe == cafe]
+        return len(found_liked_cafes) == 1
+
+
 
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
@@ -203,3 +287,6 @@ class User(db.Model):
                 return user
 
         return False
+
+
+

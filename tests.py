@@ -7,7 +7,7 @@ from unittest import TestCase
 
 from flask import session
 from app import app, CURR_USER_KEY
-from models import db, Cafe, City, connect_db, User #, Like
+from models import db, Cafe, City, connect_db, User, Like
 import re
 from helpers import get_choices_vocab
 
@@ -62,13 +62,22 @@ CITY_DATA = dict(
     state="CA"
 )
 
-CAFE_DATA = dict(
+CAFE_DATA_1 = dict(
     name="Test Cafe",
     description="Test description",
     url="http://testcafe.com/",
     address="500 Sansome St",
     city_code="sf",
     image_url="http://testcafeimg.com/"
+)
+
+CAFE_DATA_2 = dict(
+    name="Test2 Cafe",
+    description="Test2 description",
+    url="http://test2cafe.com/",
+    address="502 Sansome St",
+    city_code="sf",
+    image_url="http://test2cafeimg.com/"
 )
 
 CAFE_DATA_EDIT = dict(
@@ -118,6 +127,18 @@ ADMIN_USER_DATA = dict(
 )
 
 
+TEST_LIKE_DATA_1 = dict(
+    user_id="1",
+    cafe_id="1"
+)
+
+
+TEST_LIKE_DATA_2 = dict(
+    user_id="1",
+    cafe_id="2"
+)
+
+
 #######################################
 # homepage
 
@@ -148,7 +169,7 @@ class CityModelTestCase(TestCase):
         sf = City(**CITY_DATA)
         db.session.add(sf)
 
-        cafe = Cafe(CAFE_DATA)
+        cafe = Cafe(CAFE_DATA_1)
         db.session.add(cafe)
 
         db.session.commit()
@@ -183,7 +204,7 @@ class CafeModelTestCase(TestCase):
         sf = City(**CITY_DATA)
         db.session.add(sf)
 
-        cafe = Cafe(**CAFE_DATA)
+        cafe = Cafe(**CAFE_DATA_1)
         db.session.add(cafe)
 
         db.session.commit()
@@ -213,7 +234,7 @@ class CafeViewsTestCase(TestCase):
         sf = City(**CITY_DATA)
         db.session.add(sf)
 
-        cafe = Cafe(**CAFE_DATA)
+        cafe = Cafe(**CAFE_DATA_1)
         db.session.add(cafe)
 
         db.session.commit()
@@ -253,7 +274,7 @@ class CafeAdminViewsTestCase(TestCase):
         sf = City(**CITY_DATA)
         db.session.add(sf)
 
-        cafe = Cafe(**CAFE_DATA)
+        cafe = Cafe(**CAFE_DATA_1)
         db.session.add(cafe)
 
         db.session.commit()
@@ -556,7 +577,7 @@ class ProfileViewsTestCase(TestCase):
             )
 
             resp = client.get("/profile/edit")
-            breakpoint()
+            # breakpoint()
 
             resp = client.post(
                 "/profile/edit",
@@ -565,8 +586,6 @@ class ProfileViewsTestCase(TestCase):
             )
             breakpoint()
             self.assertIn(b"TestyEdited", resp.data)
-        # CHECK FOR NAME CHANGE.
-        # self.fail("FIXME: write this test")
 
 
 #######################################
@@ -576,4 +595,83 @@ class ProfileViewsTestCase(TestCase):
 class LikeViewsTestCase(TestCase):
     """Tests for views on cafes."""
 
-    # FIXME: add setup/teardown/inidividual tests
+    def setUp(self):
+        """Before each test, add sample user."""
+
+        Cafe.query.delete()
+        City.query.delete()
+        User.query.delete()
+        Like.query.delete()
+
+        user = User.register(**TEST_USER_DATA)
+        db.session.add(user)
+        db.session.commit()
+
+        self.user_id = user.id
+        self.user = user
+
+        sf = City(**CITY_DATA)
+        db.session.add(sf)
+
+        cafe1 = Cafe(**CAFE_DATA_1)
+        cafe2 = Cafe(**CAFE_DATA_2)
+        db.session.add(cafe1)
+        db.session.add(cafe2)
+        db.session.commit()
+
+        self.cafe1 = cafe1
+        self.cafe2 = cafe2
+
+
+    def tearDown(self):
+        """After each test, remove all users, cities, cafes, and likes."""
+
+        Like.query.delete()
+        db.session.commit()
+
+        User.query.delete()
+        db.session.commit()
+
+        Cafe.query.delete()
+        City.query.delete()
+        db.session.commit()
+
+
+    # check user liked_cafes
+    def check_user_liked_cafes_views(self):
+        """Confirm user has liked_cafes"""
+
+        with app.test_client() as client:
+            client.get("/login")
+
+            client.post(
+                "/login",
+                data={"username": "test", "password": "secret"},
+                follow_redirects=True,
+            )
+
+            self.user.liked_cafes.append(self.cafe1)
+            self.user.liked_cafes.append(self.cafe2)
+            db.session.commit()
+
+            resp = client.get("/profile")
+
+            breakpoint()
+            self.assertIn(b"Test Cafe", resp.data)
+            self.assertIn(b"Test2 Cafe", resp.data)
+
+
+    def check_user_liked_cafes_model(self):
+        """Confirms existence of liked cafes in model"""
+
+        self.user.liked_cafes.append(self.cafe1)
+        self.user.liked_cafes.append(self.cafe2)
+        db.session.commit()
+
+        like_count = len(Like.query.all())
+
+        self.assertEqual(like_count, 2)
+
+
+
+
