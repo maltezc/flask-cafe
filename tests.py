@@ -51,6 +51,12 @@ def login_for_test(client, user_id):
     with client.session_transaction() as sess:
         sess[CURR_USER_KEY] = user_id
 
+def logout_for_test(client):
+    """Log out test user"""
+
+    with client.session_transaction() as session:
+        session[CURR_USER_KEY] = ""
+
 
 #######################################
 # data to use for test objects / testing forms
@@ -138,18 +144,10 @@ TEST_LIKE_DATA_2 = dict(
     cafe_id="2"
 )
 
-#######################################
-# login helper
-def login_for_test(client, user_id):
-    """Log in this user."""
-
-    with client.session_transaction() as session:
-        session[CURR_USER_KEY] = user_id
 
 
 #######################################
 # homepage
-
 
 class HomepageViewsTestCase(TestCase):
     """Tests about homepage."""
@@ -284,10 +282,16 @@ class CafeAdminViewsTestCase(TestCase):
 
         cafe = Cafe(**CAFE_DATA_1)
         db.session.add(cafe)
+        db.session.commit()
+        self.cafe_id = cafe.id
 
+        not_admin_user = User.register(**TEST_USER_DATA)
+        admin_user = User.register(**ADMIN_USER_DATA)
+        db.session.add_all([not_admin_user, admin_user])
         db.session.commit()
 
-        self.cafe_id = cafe.id
+        self.not_admin_user = not_admin_user
+        self.admin_user = admin_user
 
     def tearDown(self):
         """After each test, delete the cities."""
@@ -296,10 +300,28 @@ class CafeAdminViewsTestCase(TestCase):
         City.query.delete()
         db.session.commit()
 
-    def test_add(self):
-        """Tests adding a cafe"""
+    def test_cafe_add_anon(self):
+        """Tests adding a cafe when no one is logged in"""
+
         with app.test_client() as client:
-            resp = client.get(f"/cafes/add")
+            resp = client.get(f"/cafes/add", follow_redirects=True)
+            self.assertIn(b'Not authorized', resp.data)
+
+    def test_cafe_add_not_admin(self):
+        """Tests adding a cafe when a non-admin is logged in"""
+
+        with app.test_client() as client:
+            login_for_test(client, self.not_admin_user.id)
+            resp = client.get("/cafes/add", follow_redirects=True)
+            self.assertIn(b'Not authorized', resp.data)
+
+
+    def test_cafe_add_is_admin(self):
+        """Tests adding a cafe when an admin is logged in"""
+
+        with app.test_client() as client:
+            login_for_test(client, self.admin_user.id)
+            resp = client.get("/cafes/add", follow_redirects=True)
             self.assertIn(b'Add Cafe', resp.data)
 
             resp = client.post(
@@ -319,6 +341,7 @@ class CafeAdminViewsTestCase(TestCase):
             r'San Francisco</option></select>')
 
         with app.test_client() as client:
+            login_for_test(client, self.admin_user.id)
             resp = client.get(f"/cafes/add")
             self.assertRegex(resp.data.decode('utf8'), choices_pattern)
 

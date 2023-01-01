@@ -249,23 +249,35 @@ def add_cafe():
     form.city_code.choices = city_codes
 
     # breakpoint()
+    if not hasattr(g.user, "admin"):
+        flash("Not authorized", "danger")
+        redirection_url = request.form.get("came_from", "/cafes")
+        # FIXME: how to get previous location url to be able to stay on the page and just flash a message
+        # breakpoint()
+        return redirect(redirection_url)
 
-    if form.validate_on_submit():
-        name = form.name.data
-        description = form.description.data
-        url = form.url.data
-        address = form.address.data
-        image_url = form.image_url.data
-        cafe = Cafe(name=name, description=description, url=url, address=address, city_code=form.city_code.data, image_url=image_url)
+    if g.user.admin:
+        if form.validate_on_submit():
+            name = form.name.data
+            description = form.description.data
+            url = form.url.data
+            address = form.address.data
+            image_url = form.image_url.data
+            cafe = Cafe(name=name, description=description, url=url, address=address, city_code=form.city_code.data, image_url=image_url)
 
-        db.session.add(cafe)
-        db.session.commit()
+            db.session.add(cafe)
+            db.session.commit()
 
-        flash(f"{cafe.name} added!")
+            flash(f"{cafe.name} added!")
 
-        return redirect(f'/cafes/{cafe.id}')
+            return redirect(f'/cafes/{cafe.id}')
+    else:
+        flash("Not authorized", "danger")
+        redirection_url = request.form.get("came_from", "/cafes")
+        return redirect(redirection_url)
 
-    return render_template("/cafe/add-form.html", form=form)
+    if g.user.admin:
+        return render_template("/cafe/add-form.html", form=form)
 
 
 # GET /cafes/[cafe-id]/edit
@@ -316,8 +328,6 @@ def get_likes():
     likes = like is not None
 
     return jsonify({"likes": likes})
-
-
 
 
 # POST /api/like
