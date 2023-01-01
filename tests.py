@@ -138,6 +138,14 @@ TEST_LIKE_DATA_2 = dict(
     cafe_id="2"
 )
 
+#######################################
+# login helper
+def login_for_test(client, user_id):
+    """Log in this user."""
+
+    with client.session_transaction() as session:
+        session[CURR_USER_KEY] = user_id
+
 
 #######################################
 # homepage
@@ -638,7 +646,7 @@ class LikeViewsTestCase(TestCase):
 
 
     # check user liked_cafes
-    def check_user_liked_cafes_views(self):
+    def test_check_user_liked_cafes_views(self):
         """Confirm user has liked_cafes"""
 
         with app.test_client() as client:
@@ -661,7 +669,7 @@ class LikeViewsTestCase(TestCase):
             self.assertIn(b"Test2 Cafe", resp.data)
 
 
-    def check_user_liked_cafes_model(self):
+    def test_check_user_liked_cafes_model(self):
         """Confirms existence of liked cafes in model"""
 
         self.user.liked_cafes.append(self.cafe1)
@@ -671,6 +679,47 @@ class LikeViewsTestCase(TestCase):
         like_count = len(Like.query.all())
 
         self.assertEqual(like_count, 2)
+
+    ## likes tests for views
+    def test_api_likes(self):
+        """Checks likes"""
+        # check not logged in first
+        with app.test_client() as client:
+            resp = client.get(f"/api/likes?cafe_id={self.cafe1.id}")
+            self.assertEqual(resp.json, {"error": "Not logged in"})
+
+            # check for logged in
+            login_for_test(client, self.user_id)
+            self.user.liked_cafes.append(self.cafe1)
+
+            resp = client.get(f"/api/likes?cafe_id={self.cafe1.id}")
+            self.assertEqual(resp.json, {'likes': True})
+
+    def test_api_like(self):
+        """tests when a user likes a cafe"""
+
+        with app.test_client() as client:
+            resp = client.post(f"/api/toggle_like/{self.cafe1.id}")
+            self.assertEqual(resp.json, {"error": "Not logged in"})
+
+            login_for_test(client, self.user_id)
+
+            resp = client.post(f"/api/toggle_like/{self.cafe1.id}")
+            self.assertEqual(resp.json, {'liked': self.cafe1.id})
+
+
+    def test_api_unlike(self):
+        """tests when a user unlikes a cafe"""
+
+        with app.test_client() as client:
+            resp = client.post(f"/api/toggle_like/{self.cafe1.id}")
+            self.assertEqual(resp.json, {"error": "Not logged in"})
+
+            login_for_test(client, self.user_id)
+
+            resp = client.post(f"/api/toggle_like/{self.cafe1.id}")
+            resp = client.post(f"/api/toggle_like/{self.cafe1.id}")
+            self.assertEqual(resp.json, {'unliked': self.cafe1.id})
 
 
 

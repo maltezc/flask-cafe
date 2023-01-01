@@ -115,6 +115,28 @@ class Cafe(db.Model):
 
     liking_users = db.relationship("User", secondary="likes")
 
+    def is_liking_cafe(self, current_user):
+        """Does current user like the cafe?"""
+
+        # get all users who currently like the cafe
+        found_user_list = [
+            user for user in self.liking_users if user == current_user
+        ]
+        return len(found_user_list) == 1
+
+        #  if user is found, remove user, if not add the user
+
+
+    def like_cafe(self, user):
+        if not self.is_liking_cafe(user):
+            self.liking_users.append(user)
+            return self
+
+    def unlike_cafe(self, user):
+        if self.is_liking_cafe(user):
+            self.liking_users.remove(user)
+            return self
+
 
 
     def __repr__(self):
@@ -133,6 +155,17 @@ class Cafe(db.Model):
     #     found_user_list = [
     #         user for user in Like.cafe_id if cafe_id == id]
     #     return len(found_user_list) == 1`
+
+
+    # not sure if below is necessary
+    # def serialize(self):
+    #     """ Serialize message instance to python dictionary """
+
+    #     return {
+    #         "id": self.id,
+    #         "name": self.name,
+    #         # "user_id": g.user.user_id,
+    #     }
 
 
 def connect_db(app):
@@ -210,22 +243,18 @@ class User(db.Model):
     liked_cafes = db.relationship('Cafe', secondary="likes")
 
 
+
     # def like_cafe(self, cafe):
-    #     if not self.currently_likes(cafe):
-    #         self.liked_cafes.append(cafe)
+    #     if not self.is_liking_cafe(user):
+    #         self.liked_cafes.append(user)
     #         return self
 
     # def unlike_cafe(self, cafe):
-    #     if self.currently_likes(cafe):
-    #         self.liked_cafes.remove(cafe)
+    #     if self.is_liking_cafe(user):
+    #         self.liked_cafes.remove(user)
     #         return self
 
-    # def is_followed_by(self, other_user):
-    #     """Is this user followed by `other_user`?"""
 
-    #     found_user_list = [
-    #         user for user in self.followers if user == other_user]
-    #     return len(found_user_list) == 1
 
     def currently_likes(self, cafe):
         """does this user currently like the cafe?"""

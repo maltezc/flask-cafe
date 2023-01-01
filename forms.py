@@ -14,7 +14,7 @@ class CafeAddUpdateForm(FlaskForm):
     image_url = URLField('(Optional) Image URL')
 
 
-class CSRFProtection(FlaskForm):
+class CSRFOnlyForm(FlaskForm):
     """ CSRF only form. """
 
 

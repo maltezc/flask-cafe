@@ -1,12 +1,12 @@
 """Flask App for Flask Cafe."""
 
-from flask import Flask, render_template, redirect, render_template, flash, session, g
+from flask import Flask, render_template, redirect, flash, session, g, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 import os
 
-from models import db, connect_db, Cafe, City, User, DEFAULT_USER_IMAGE_URL
-from forms import CafeAddUpdateForm, UserAddForm, LoginForm, CSRFProtection, ProfileEditForm
+from models import db, connect_db, Cafe, City, User, DEFAULT_USER_IMAGE_URL, Like
+from forms import CafeAddUpdateForm, UserAddForm, LoginForm, CSRFOnlyForm, ProfileEditForm
 from helpers import get_choices_vocab
 
 
@@ -21,6 +21,12 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
+
+
+#necessary for token in base.html: axios.defaults.headers.common["X-CSRFToken"] = "{{ csrf_token() }}";
+#for how to use csrf_token with axios
+from flask_wtf.csrf import CSRFProtect
+csrf = CSRFProtect(app)
 
 ######################################################################################
 # auth & auth routes
@@ -43,7 +49,7 @@ def add_user_to_g():
 def add_csrf_only_form():
     """Add a CSRF-only form so that every route can use it."""
 
-    g.csrf_form = CSRFProtection()
+    g.csrf_form = CSRFOnlyForm()
 
 
 def do_login(user):
@@ -293,3 +299,110 @@ def edit_cafe(cafe_id):
 
     return render_template("/cafe/edit-form.html", form=form, cafe=cafe)
 
+
+# GET /api/likes
+# Given cafe_id in the URL query string, figure out if the current user likes that cafe, and return JSON: {"likes": true|false}
+@app.get('/api/likes')
+def get_likes():
+    """checks to like status of cafe for the user"""
+
+    if not g.user:
+        return jsonify({"error": "Not logged in"})
+
+    cafe_id = int(request.args['cafe_id'])
+    cafe = Cafe.query.get_or_404(cafe_id)
+
+    like = Like.query.filter_by(user_id=g.user.id, cafe_id=cafe.id).first()
+    likes = like is not None
+
+    return jsonify({"likes": likes})
+
+
+
+
+# POST /api/like
+# Given JSON {"cafe_id": 1}, make the current user like cafe #1. Return JSON {"liked": 1}.
+# POST /api/unlike
+# Given JSON {"cafe_id": 1}, make the current user unlike cafe #1. Return JSON {"unliked": 1}.
+
+@app.post('/api/toggle_like/<int:cafe_id>')
+# @app.post('/messages/<int:message_id>/like')
+def toggle_like(cafe_id):
+    """Toggle a cafe like status for the currently-logged-in user.
+    """
+
+    if not g.user:
+        return jsonify({"error": "Not logged in"})
+
+    cafe = Cafe.query.get_or_404(cafe_id)
+
+    form = g.csrf_form
+
+    if not form.validate_on_submit() or not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    if g.user in cafe.liking_users:
+        cafe.unlike_cafe(g.user)
+        status = {"unliked": cafe_id}
+        db.session.commit()
+        return jsonify(status)
+
+    else:
+        cafe.like_cafe(g.user)
+        status = {"liked": cafe_id}
+        db.session.commit()
+        return jsonify(status)
+
+
+
+
+    # if cafe in g.user.liked_cafes:
+    #     g.user.liked_messages.remove(message)
+    # else:
+    #     g.user.liked_messages.append(message)
+    #     is_msg_liked = True
+
+
+
+    # serialized = cafe.serialize()
+    # serialized["is_liked"] = is_cafe_liked
+
+    # return ((status), 201)
+    # return (jsonify(message=serialized), 201)
+
+
+
+    # Identify the url the user is coming from via the hidden input. We can
+    # redirect them back to this location for a better user experience. Added
+    # the default of "/" so the app doesn't crash in the event that a template is
+    # added/changed and someone forgets to include that hidden input element.
+    # redirection_url = request.form.get("came_from", "/")
+
+    # if cafe.user_id == g.user.id:
+    #     return abort(403) # doesnt apply
+
+    # if g.user in cafe.liking_users:
+    #     cafe.unlike_cafe(g.user)
+    # else:
+    #     cafe.like_cafe(g.user)
+
+    # db.session.commit()
+
+    # return redirect(redirection_url)
+
+
+##############################################################################
+# Turn off all caching in Flask
+#   (useful for dev; in production, this kind of stuff is typically
+#   handled elsewhere)
+#
+# https://stackoverflow.com/questions/34066804/disabling-caching-in-flask
+
+@app.after_request
+def add_header(response):
+    """Add non-caching headers on every request."""
+
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+    response.cache_control.no_store = True
+    return response
