@@ -4,6 +4,8 @@
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
+from mapping import save_map
+
 
 bcrypt = Bcrypt()
 db = SQLAlchemy()
@@ -138,8 +140,7 @@ class Cafe(db.Model):
             return self
 
 
-
-    def __repr__(self):
+    def __repr__(self): # pragma: no cover #FIXME: saw this in the solution, what does this mean?
         return f'<Cafe id={self.id} name="{self.name}">'
 
     def get_city_state(self):
@@ -149,23 +150,10 @@ class Cafe(db.Model):
         return f'{city.name}, {city.state}'
 
 
-    # `def is_liked_by(self, user):
-    #     """Is this user followed by `other_user`?"""
+    def save_map(self):
+        """Saves map"""
 
-    #     found_user_list = [
-    #         user for user in Like.cafe_id if cafe_id == id]
-    #     return len(found_user_list) == 1`
-
-
-    # not sure if below is necessary
-    # def serialize(self):
-    #     """ Serialize message instance to python dictionary """
-
-    #     return {
-    #         "id": self.id,
-    #         "name": self.name,
-    #         # "user_id": g.user.user_id,
-    #     }
+        return save_map(self.id, self.address, self.city.name, self.city.state)
 
 
 def connect_db(app):
@@ -193,10 +181,10 @@ class User(db.Model):
     username = db.Column(
         db.Text,
         nullable=False,
-        # unique=True,
+        unique=True
     )
 
-    #TODO: ADMIN
+
     admin = db.Column(
         db.Boolean,
         nullable=True,

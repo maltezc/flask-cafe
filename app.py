@@ -4,8 +4,10 @@ from flask import Flask, render_template, redirect, flash, session, g, request, 
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
-from models import db, connect_db, Cafe, City, User, DEFAULT_USER_IMAGE_URL, Like
+from models import db, connect_db, Cafe, City, User, DEFAULT_USER_IMAGE_URL, Like, save_map
 from forms import CafeAddUpdateForm, UserAddForm, LoginForm, CSRFOnlyForm, ProfileEditForm
 from helpers import get_choices_vocab
 
@@ -17,6 +19,8 @@ app.config['SECRET_KEY'] = os.environ.get("FLASK_SECRET_KEY", "shhhh")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+app.config['MAPQUEST_API_KEY'] = os.environ['MAPQUEST_API_KEY']
+
 
 toolbar = DebugToolbarExtension(app)
 
@@ -100,7 +104,6 @@ def signup():
             db.session.commit()
 
         except IntegrityError:
-            # flash("Username already taken")
             flash("Username already taken", 'danger')
             return render_template('auth/signup-form.html', form=form)
 
@@ -168,7 +171,6 @@ def user_detail_page():
         return redirect("/login")
 
     user = g.user
-    # user = User.query.get_or_404(g.user.id)
 
     return render_template("/users/detail.html", user=user)
 
@@ -217,7 +219,6 @@ def homepage():
 ##############################################################################################
 # cafes
 
-
 @app.get('/cafes')
 def cafe_list():
     """Return list of all cafes."""
@@ -245,15 +246,12 @@ def add_cafe():
 
     form = CafeAddUpdateForm()
     city_codes = get_choices_vocab()
-    # city_codes = [(city.code, city.name) for city in City.query.all()]
     form.city_code.choices = city_codes
 
-    # breakpoint()
     if not hasattr(g.user, "admin"):
         flash("Not authorized", "danger")
         redirection_url = request.form.get("came_from", "/cafes")
         # FIXME: how to get previous location url to be able to stay on the page and just flash a message
-        # breakpoint()
         return redirect(redirection_url)
 
     if g.user.admin:
@@ -267,6 +265,8 @@ def add_cafe():
 
             db.session.add(cafe)
             db.session.commit()
+
+            save_map(cafe.id, cafe.address, cafe.city.name, cafe.city.state)
 
             flash(f"{cafe.name} added!")
 
@@ -336,7 +336,6 @@ def get_likes():
 # Given JSON {"cafe_id": 1}, make the current user unlike cafe #1. Return JSON {"unliked": 1}.
 
 @app.post('/api/toggle_like/<int:cafe_id>')
-# @app.post('/messages/<int:message_id>/like')
 def toggle_like(cafe_id):
     """Toggle a cafe like status for the currently-logged-in user.
     """
@@ -364,42 +363,11 @@ def toggle_like(cafe_id):
         db.session.commit()
         return jsonify(status)
 
-
-
-
-    # if cafe in g.user.liked_cafes:
-    #     g.user.liked_messages.remove(message)
-    # else:
-    #     g.user.liked_messages.append(message)
-    #     is_msg_liked = True
-
-
-
-    # serialized = cafe.serialize()
-    # serialized["is_liked"] = is_cafe_liked
-
-    # return ((status), 201)
-    # return (jsonify(message=serialized), 201)
-
-
-
-    # Identify the url the user is coming from via the hidden input. We can
-    # redirect them back to this location for a better user experience. Added
-    # the default of "/" so the app doesn't crash in the event that a template is
-    # added/changed and someone forgets to include that hidden input element.
-    # redirection_url = request.form.get("came_from", "/")
-
-    # if cafe.user_id == g.user.id:
-    #     return abort(403) # doesnt apply
-
-    # if g.user in cafe.liking_users:
-    #     cafe.unlike_cafe(g.user)
-    # else:
-    #     cafe.like_cafe(g.user)
-
-    # db.session.commit()
-
-    # return redirect(redirection_url)
+######################404Page ###################
+@app.errorhandler(404)
+def page_note_found(e):
+    """ Show a custom 404 page """
+    return render_template("404.html")
 
 
 ##############################################################################

@@ -1,7 +1,6 @@
 """Initial data."""
 
 from models import City, Cafe, db, connect_db, User
-# from models import City, Cafe, User, db, connect_db
 from flask import Flask
 
 app = Flask(__name__)
@@ -93,7 +92,7 @@ db.session.commit()
 #######################################
 # cafe maps
 
-# c1.save_map()
-# c2.save_map()
-#
-#db.session.commit()
+c1.save_map()
+c2.save_map()
+
+db.session.commit()

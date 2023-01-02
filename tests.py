@@ -185,9 +185,11 @@ class CityModelTestCase(TestCase):
     def tearDown(self):
         """After each test, remove all cafes."""
 
-        Cafe.query.delete()
-        City.query.delete()
-        db.session.commit()
+        db.session.rollback()
+
+        # Cafe.query.delete()
+        # City.query.delete()
+        # db.session.commit()
 
     # depending on how you solve exercise, you may have things to test on
     # the City model, so here's a good place to put that stuff.
@@ -220,9 +222,11 @@ class CafeModelTestCase(TestCase):
     def tearDown(self):
         """After each test, remove all cafes."""
 
-        Cafe.query.delete()
-        City.query.delete()
-        db.session.commit()
+        db.session.rollback()
+
+        # Cafe.query.delete()
+        # City.query.delete()
+        # db.session.commit()
 
     def test_get_city_state(self):
         self.assertEqual(self.cafe.get_city_state(), "San Francisco, CA")
@@ -250,9 +254,11 @@ class CafeViewsTestCase(TestCase):
     def tearDown(self):
         """After each test, remove all cafes."""
 
-        Cafe.query.delete()
-        City.query.delete()
-        db.session.commit()
+        db.session.rollback()
+
+        # Cafe.query.delete()
+        # City.query.delete()
+        # db.session.commit()
 
     def test_list(self):
         with app.test_client() as client:
@@ -274,8 +280,10 @@ class CafeAdminViewsTestCase(TestCase):
     def setUp(self):
         """Before each test, add sample city, users, and cafes"""
 
-        City.query.delete()
         Cafe.query.delete()
+        City.query.delete() # !! ORDER MATTERS! CAFE MUST BE DELETED FIRST BECAUSE CITY RELIES ON IT!
+        User.query.delete()
+
 
         sf = City(**CITY_DATA)
         db.session.add(sf)
@@ -296,9 +304,11 @@ class CafeAdminViewsTestCase(TestCase):
     def tearDown(self):
         """After each test, delete the cities."""
 
-        Cafe.query.delete()
-        City.query.delete()
-        db.session.commit()
+        db.session.rollback()
+
+        # Cafe.query.delete()
+        # City.query.delete()
+        # db.session.commit()
 
     def test_cafe_add_anon(self):
         """Tests adding a cafe when no one is logged in"""
@@ -397,8 +407,10 @@ class UserModelTestCase(TestCase):
     def tearDown(self):
         """After each test, remove all users."""
 
-        User.query.delete()
-        db.session.commit()
+        db.session.rollback()
+
+        # User.query.delete()
+        # db.session.commit()
 
     def test_authenticate(self):
         rez = User.authenticate("test", "secret")
@@ -417,7 +429,8 @@ class UserModelTestCase(TestCase):
     def test_register(self):
         u = User.register(**TEST_USER_DATA)
         # test that password gets bcrypt-hashed (all start w/$2b$)
-        self.assertEqual(u.hashed_password[:4], "$2b$")
+        self.assertEqual(u.password[:4], "$2b$")
+        # self.assertEqual(u.hashed_password[:4], "$2b$")
         db.session.rollback()
 
 
@@ -430,9 +443,7 @@ class AuthViewsTestCase(TestCase):
         User.query.delete()
 
         user = User.register(**TEST_USER_DATA)
-        # user = User.register(**TEST_USER_DATA)
         db.session.add(user)
-
         db.session.commit()
 
         self.user_id = user.id
@@ -440,8 +451,12 @@ class AuthViewsTestCase(TestCase):
     def tearDown(self):
         """After each test, remove all users."""
 
-        User.query.delete()
-        db.session.commit()
+        # FIXME: WHY USE ROLLBACK() INSTEAD OF NUKING DB AND COMMITING? PER SOLUTION, ONLY ROLLBACK IS USED
+        db.session.rollback() #SHOULD ALWAYS BE USED IN TEAR DOWN
+
+
+        # User.query.delete()
+        # db.session.commit()
 
     def test_signup(self):
         with app.test_client() as client:
@@ -457,7 +472,7 @@ class AuthViewsTestCase(TestCase):
             self.assertIn(b"You are signed up and logged in.", resp.data)
             self.assertTrue(session.get(CURR_USER_KEY))
 
-    # FIXME: THIS TEST IS FAILING. TEST_USER_DATA IS NOT COMMITTED FOR SOME REASON AND PAGE SKIPS TO HOME PAGE. TRY/EXCEPT COULD BE CULPRIT
+    # needs rollback() in tear down instead of typical CLASS.query.delete()
     def test_signup_username_taken(self):
         with app.test_client() as client:
             resp = client.get("/signup")
@@ -469,7 +484,7 @@ class AuthViewsTestCase(TestCase):
                 data=TEST_USER_DATA,
                 follow_redirects=True,
             )
-            breakpoint()
+
             self.assertIn(b"Username already taken", resp.data)
 
     def test_login(self):
@@ -521,8 +536,10 @@ class NavBarTestCase(TestCase):
     def tearDown(self):
         """After tests, remove all users."""
 
-        User.query.delete()
-        db.session.commit()
+        db.session.rollback()
+
+        # User.query.delete()
+        # db.session.commit()
 
     def test_anon_navbar(self):
         with app.test_client() as client:
@@ -562,8 +579,9 @@ class ProfileViewsTestCase(TestCase):
     def tearDown(self):
         """After each test, remove all users."""
 
-        User.query.delete()
-        db.session.commit()
+        db.session.rollback()
+        # User.query.delete()
+        # db.session.commit()
 
     def test_anon_profile(self):
         with app.test_client() as client:
@@ -615,7 +633,7 @@ class ProfileViewsTestCase(TestCase):
                 data={"first_name": "TestyEdited"},
                 follow_redirects=True,
             )
-            breakpoint()
+            # breakpoint()
             self.assertIn(b"TestyEdited", resp.data)
 
 
@@ -657,15 +675,17 @@ class LikeViewsTestCase(TestCase):
     def tearDown(self):
         """After each test, remove all users, cities, cafes, and likes."""
 
-        Like.query.delete()
-        db.session.commit()
+        db.session.rollback()
 
-        User.query.delete()
-        db.session.commit()
+        # Like.query.delete()
+        # db.session.commit()
 
-        Cafe.query.delete()
-        City.query.delete()
-        db.session.commit()
+        # User.query.delete()
+        # db.session.commit()
+
+        # Cafe.query.delete()
+        # City.query.delete()
+        # db.session.commit()
 
 
     # check user liked_cafes
@@ -687,7 +707,7 @@ class LikeViewsTestCase(TestCase):
 
             resp = client.get("/profile")
 
-            breakpoint()
+            # breakpoint()
             self.assertIn(b"Test Cafe", resp.data)
             self.assertIn(b"Test2 Cafe", resp.data)
 
