@@ -281,7 +281,7 @@ class CafeAdminViewsTestCase(TestCase):
         """Before each test, add sample city, users, and cafes"""
 
         Cafe.query.delete()
-        City.query.delete() # !! ORDER MATTERS! CAFE MUST BE DELETED FIRST BECAUSE CITY RELIES ON IT!
+        City.query.delete() # !! FIXME: ORDER MATTERS! CAFE MUST BE DELETED FIRST BECAUSE CITY RELIES ON IT!
         User.query.delete()
 
 
@@ -472,7 +472,7 @@ class AuthViewsTestCase(TestCase):
             self.assertIn(b"You are signed up and logged in.", resp.data)
             self.assertTrue(session.get(CURR_USER_KEY))
 
-    # needs rollback() in tear down instead of typical CLASS.query.delete()
+    # FIXME: needs rollback() in tear down instead of typical CLASS.query.delete()
     def test_signup_username_taken(self):
         with app.test_client() as client:
             resp = client.get("/signup")

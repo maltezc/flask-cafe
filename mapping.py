@@ -25,3 +25,6 @@ def save_map(id, address, city, state):
     # write contents of file to path
     with open(f"{path}/static/maps/{id}.jpg", 'wb') as wf: # opens in write mode.
         wf.write(resp.content)
+
+    # FIXME: WHY ARE WE SAVING IMAGE IN ROOT AND NOT IN DB?
+        # Elie's short answer: images are not good to store in databses
